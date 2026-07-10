@@ -14,7 +14,9 @@ The app never does a naive `kWh ÷ kW` division. It integrates in 0.5% steps (0.
 | **Level 2** (240V) | min(station kW, 7.2 kW onboard limit) × 90% efficiency, slight taper above 96% |
 | **DC Fast** (CCS) | 13-point piecewise taper curve: ~130 kW peak near 20% SoC → ~42 kW at 80% → single digits near 100%, capped by station max (50 / 62.5 / 150 / 350 kW) |
 
-A **cold battery** toggle cuts DC power to 60% (AC to 95%), reflecting how a cold pack protects itself by limiting charge current.
+An **ambient temperature slider** (-10°F to 110°F) applies a piecewise power multiplier: DC charging is heavily curtailed in the cold (~55% power at freezing, ~30% at -10°F — the BMS limits current into cold cells to prevent lithium plating) and mildly throttled above ~95°F; AC is barely rate-limited by temperature, carrying only a small cold penalty for battery-heater overhead.
+
+A **cost estimator** takes a $/kWh rate (remembered separately for home AC vs. public DC, since they differ 3–5×) and computes session cost on the *wall side* — pack energy divided by charger efficiency — because that's what the meter or station actually bills. Costs appear in the result line and per-target in the comparison table.
 
 When DC Fast is selected, a live taper-curve chart appears with your session shaded on it — a visual explanation of why 80→100% takes nearly as long as 20→80% on a fast charger.
 
