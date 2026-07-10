@@ -104,17 +104,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;heigh
   border:1.5px solid var(--line);background:var(--panel2);color:var(--dim);cursor:pointer}
 .opt.on{border-color:var(--charge);color:var(--charge)}
 
-/* cold toggle */
-.toggle-row{display:flex;align-items:center;gap:12px;margin-top:14px;
-  border:1.5px solid var(--line);border-radius:14px;background:var(--panel);padding:12px 14px;cursor:pointer}
-.toggle-row .t-txt b{font-size:14px;display:block}
-.toggle-row .t-txt span{font-size:12px;color:var(--dim)}
-.tog{margin-left:auto;width:50px;height:28px;border-radius:14px;background:var(--panel2);
-  border:1.5px solid var(--line);position:relative;flex:none;transition:background .15s}
-.tog::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-  background:var(--dim);transition:all .15s}
-.toggle-row.on .tog{background:rgba(96,165,250,.25);border-color:#60A5FA}
-.toggle-row.on .tog::after{left:24px;background:#60A5FA}
+/* temperature */
+.temp-readout{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+.temp-readout .tval{font-family:var(--disp);font-size:26px;font-weight:600}
+.temp-readout .tnote{font-size:12.5px;color:var(--dim);margin-left:auto;font-family:var(--disp);letter-spacing:.04em}
+.temp-slider{margin-top:6px !important}
+.temp-slider::-webkit-slider-runnable-track{
+  background:linear-gradient(90deg,#60A5FA 0%,#57D9A3 58%,#EAB308 78%,#EF4444 100%) !important}
+.temp-slider::-webkit-slider-thumb{border-color:var(--txt) !important}
+
+/* rate */
+.rate-row{display:flex;align-items:baseline;gap:8px;border:1.5px solid var(--line);
+  border-radius:14px;background:var(--panel);padding:13px 16px}
+.rate-row .cur{font-family:var(--disp);font-size:20px;color:var(--dim)}
+.rate-row input{font-family:var(--disp);font-size:22px;font-weight:600;color:var(--txt);
+  background:transparent;border:none;outline:none;width:88px;border-bottom:1.5px solid var(--line);border-radius:0}
+.rate-row input:focus{border-bottom-color:var(--copper)}
+.rate-row .per{font-family:var(--disp);font-size:13px;color:var(--dim)}
+.rate-row .hint{margin-left:auto;font-size:11px;color:var(--faint);text-align:right;line-height:1.4}
+
+/* start time */
+.start-readout{display:flex;align-items:baseline;gap:12px;margin-bottom:2px}
+.start-readout .when{font-family:var(--disp);font-size:26px;font-weight:600;color:var(--copper)}
+.reset-btn{margin-left:auto;font-family:var(--disp);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--dim);background:var(--panel);border:1.5px solid var(--line);
+  border-radius:8px;padding:6px 10px;cursor:pointer}
+.start-slider{margin-top:6px !important}
+.start-slider::-webkit-slider-runnable-track{
+  background:linear-gradient(90deg,var(--copper) var(--pct,0%),var(--panel2) var(--pct,0%)) !important}
+.start-slider::-webkit-slider-thumb{border-color:var(--copper) !important}
 
 /* ---------- result ---------- */
 .result{margin-top:22px;border:1.5px solid var(--copper-dim);border-radius:16px;
@@ -130,7 +148,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;heigh
 .tt td{padding:9px 4px;border-top:1px solid var(--line);font-size:14.5px}
 .tt td:first-child{color:var(--dim)}
 .tt td:nth-child(2){text-align:right;font-weight:600}
-.tt td:nth-child(3){text-align:right;color:var(--faint);font-size:12.5px}
+.tt td:nth-child(3){text-align:right;color:var(--faint);font-size:12px}
+.tt td:nth-child(4){text-align:right;color:var(--dim);font-size:12.5px;font-weight:500}
 .tt tr.sel td{color:var(--copper)}
 .tt tr.sel td:first-child::before{content:'\25B8 ';color:var(--copper)}
 
@@ -207,10 +226,32 @@ footer{margin-top:26px;font-size:11px;color:var(--faint);line-height:1.6;text-al
   </div>
 </div>
 
-<div class="toggle-row" id="coldRow">
-  <div class="t-txt"><b>Cold battery</b><span>Below ~40&deg;F &mdash; the pack accepts less power</span></div>
-  <div class="tog"></div>
+<!-- ambient temperature -->
+<div class="sec-lab">Ambient temperature</div>
+<div class="temp-readout">
+  <span class="tval" id="tempVal">70&deg;F</span>
+  <span class="tnote" id="tempNote">optimal range</span>
 </div>
+<input type="range" id="tempSlider" class="temp-slider" min="-10" max="110" value="70" step="1">
+<div class="slider-lab"><span>-10&deg;</span><span>&deg;F</span><span>110&deg;</span></div>
+
+<!-- electricity rate -->
+<div class="sec-lab">Electricity rate</div>
+<div class="rate-row">
+  <span class="cur">$</span>
+  <input type="number" id="rateInput" inputmode="decimal" step="0.01" min="0" max="3">
+  <span class="per">/ kWh</span>
+  <span class="hint" id="rateHint"></span>
+</div>
+
+<!-- start time -->
+<div class="sec-lab">Plug in at</div>
+<div class="start-readout">
+  <span class="when" id="startWhen">Now</span>
+  <button id="startReset" class="reset-btn" style="display:none">reset to now</button>
+</div>
+<input type="range" id="startSlider" class="start-slider" min="0" max="1440" value="0" step="15">
+<div class="slider-lab"><span>NOW</span><span>START TIME</span><span>+24 H</span></div>
 
 <!-- result -->
 <div class="result" id="result">
@@ -239,21 +280,39 @@ const CAP = 87;                 // kWh usable
 const KWH_PER_PCT = CAP / 100;  // 0.87
 
 const state = {
-  soc: 50,        // current %
-  target: 80,     // target %
-  charger: 'L2',  // L1 | L2 | DC
-  l2kw: 7.2,      // station kW (wall side)
-  dckw: 150,      // station max kW
-  cold: false
+  soc: 50,           // current %
+  target: 80,        // target %
+  charger: 'L2',     // L1 | L2 | DC
+  l2kw: 7.2,         // station kW (wall side)
+  dckw: 150,         // station max kW
+  tempF: 70,         // ambient temperature °F
+  rates: { L1: 0.14, L2: 0.14, DC: 0.45 },  // $/kWh billed, per charger type
+  startOffsetMin: 0  // minutes from now until plug-in (0 = now); NOT persisted
 };
 
 /* ---------- persistence ---------- */
 const SKEY = 'ariya_charge_state';
 try {
   const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
-  if (saved) Object.assign(state, saved);
+  if (saved){
+    // migrate v1.1 saved state: old boolean "cold" -> a cold temperature
+    if (typeof saved.cold === 'boolean'){
+      saved.tempF = saved.cold ? 30 : 70;
+      delete saved.cold;
+    }
+    const savedRates = saved.rates;   // merge rates so missing keys keep defaults
+    delete saved.rates;
+    Object.assign(state, saved);
+    if (savedRates) Object.assign(state.rates, savedRates);
+  }
 } catch(e){ /* corrupt state -> defaults */ }
-function persist(){ try{ localStorage.setItem(SKEY, JSON.stringify(state)); }catch(e){} }
+state.startOffsetMin = 0; // always open with "plug in now"
+function persist(){
+  try{
+    const { startOffsetMin, ...rest } = state; // start time is session-only
+    localStorage.setItem(SKEY, JSON.stringify(rest));
+  }catch(e){}
+}
 
 /* ============================================================
    POWER MODELS  (all return kW *delivered to the pack* at a
@@ -278,6 +337,16 @@ function powerL2(soc){
   return p;
 }
 
+/* Shared piecewise-linear interpolator: points = [[x, y], ...] sorted by x */
+function interp(points, x){
+  if (x <= points[0][0]) return points[0][1];
+  for (let i = 1; i < points.length; i++){
+    const [x0,y0] = points[i-1], [x1,y1] = points[i];
+    if (x <= x1) return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return points[points.length-1][1];
+}
+
 /* DC: piecewise-linear taper curve for the 87 kWh Ariya pack,
    points are [SoC%, pack kW]. Peak ~130 kW near 20% SoC, then the
    BMS steps power down to protect the cells. Station max caps it. */
@@ -286,26 +355,50 @@ const DC_CURVE = [
   [65, 80], [70, 66],  [75, 55],  [80, 42],  [85, 30],
   [90, 20], [95, 12],  [100, 6]
 ];
-function dcCurveAt(soc){
-  for (let i = 1; i < DC_CURVE.length; i++){
-    const [s0,p0] = DC_CURVE[i-1], [s1,p1] = DC_CURVE[i];
-    if (soc <= s1) return p0 + (p1 - p0) * (soc - s0) / (s1 - s0);
-  }
-  return DC_CURVE[DC_CURVE.length-1][1];
-}
+function dcCurveAt(soc){ return interp(DC_CURVE, soc); }
 function powerDC(soc){
   return Math.min(dcCurveAt(soc), state.dckw * 0.97); // ~97% DC efficiency
+}
+
+/* Temperature multipliers: [°F, power fraction].
+   DC is hit hard by cold — the BMS sharply limits charge current into
+   cold cells (lithium plating risk). Heat matters less until ~95°F+,
+   where thermal management throttles to protect the pack.
+   AC is slow enough that temperature barely limits the *rate*; the small
+   cold penalty reflects battery-heater overhead. */
+const TEMP_DC = [
+  [-10, 0.30], [10, 0.42], [32, 0.55], [50, 0.75],
+  [65, 0.95],  [70, 1.00], [85, 1.00], [95, 0.90], [110, 0.78]
+];
+const TEMP_AC = [
+  [-10, 0.78], [32, 0.90], [50, 0.96], [65, 1.00], [90, 1.00], [110, 0.95]
+];
+function tempMult(){
+  return interp(state.charger === 'DC' ? TEMP_DC : TEMP_AC, state.tempF);
+}
+function tempNote(){
+  const t = state.tempF;
+  if (t <= 20)  return 'very cold \u00B7 DC heavily limited';
+  if (t <= 40)  return 'cold \u00B7 pack accepts less power';
+  if (t <= 60)  return 'cool \u00B7 slightly reduced';
+  if (t <= 90)  return 'optimal range';
+  if (t <= 100) return 'hot \u00B7 mild throttling';
+  return 'very hot \u00B7 thermal throttling';
+}
+
+/* Wall-side efficiency per charger — what the meter/station bills vs.
+   what reaches the pack. Cost is computed on the wall side. */
+function wallEff(){
+  return state.charger === 'L1' ? 0.82
+       : state.charger === 'L2' ? 0.90
+       : 0.97;
 }
 
 function packPower(soc){
   let p = state.charger === 'L1' ? powerL1(soc)
         : state.charger === 'L2' ? powerL2(soc)
         : powerDC(soc);
-  if (state.cold){
-    // Cold pack: DC power is heavily curtailed; AC only mildly slower
-    p *= (state.charger === 'DC') ? 0.60 : 0.95;
-  }
-  return Math.max(p, 0.05);
+  return Math.max(p * tempMult(), 0.05);
 }
 
 /* ============================================================
@@ -342,8 +435,9 @@ function fmtDurPlain(h){
   const d = Math.floor(totalMin/1440), hh = Math.floor((totalMin%1440)/60), mm = totalMin%60;
   return (d?d+'d ':'') + (hh?hh+'h ':'') + mm+'m';
 }
-function fmtClock(h){
-  const t = new Date(Date.now() + h * 3600 * 1000);
+function startMs(){ return Date.now() + state.startOffsetMin * 60000; }
+function fmtClock(h, baseMs = startMs()){
+  const t = new Date(baseMs + h * 3600 * 1000);
   const opts = {hour:'numeric', minute:'2-digit'};
   const dayDiff = Math.floor((t - new Date().setHours(0,0,0,0)) / 86400000);
   let day = '';
@@ -384,7 +478,30 @@ function render(){
     o.classList.toggle('on', +o.dataset.kw === state.l2kw));
   document.querySelectorAll('#dcopts .opt').forEach(o =>
     o.classList.toggle('on', +o.dataset.kw === state.dckw));
-  $('coldRow').classList.toggle('on', state.cold);
+  // temperature
+  $('tempSlider').value = state.tempF;
+  $('tempVal').innerHTML = state.tempF + '&deg;F';
+  $('tempNote').textContent = tempNote();
+
+  // rate (per active charger type)
+  const rate = state.rates[state.charger];
+  const rateIn = $('rateInput');
+  if (document.activeElement !== rateIn) rateIn.value = rate.toFixed(2);
+  $('rateHint').innerHTML = state.charger === 'DC'
+    ? 'public DC typical<br>$0.40&ndash;0.56'
+    : 'home typical<br>$0.10&ndash;0.20';
+
+  // cost helper: stations/meters bill wall-side energy
+  const costOf = (fromPct, toPct) =>
+    ((toPct - fromPct) * KWH_PER_PCT / wallEff()) * rate;
+
+  // start time controls
+  const off = state.startOffsetMin;
+  const startSl = $('startSlider');
+  startSl.value = off;
+  startSl.style.setProperty('--pct', (off / 1440 * 100) + '%');
+  $('startWhen').textContent = off === 0 ? 'Now' : fmtClock(0);
+  $('startReset').style.display = off === 0 ? 'none' : 'inline-block';
 
   // main result
   const h = hoursToTarget(state.soc, state.target);
@@ -394,11 +511,12 @@ function render(){
     $('metaLine').textContent = 'Target is at or below your current charge.';
   } else {
     $('bigTime').innerHTML = fmtDur(h);
-    $('doneAt').textContent = 'Done around ' + fmtClock(h) + ' if you plug in now';
+    $('doneAt').textContent = 'Done around ' + fmtClock(h) +
+      (off === 0 ? ' if you plug in now' : ' if you plug in at ' + fmtClock(0));
     const kwhAdded = ((state.target - state.soc) * KWH_PER_PCT).toFixed(1);
     const avgKw = (kwhAdded / h).toFixed(1);
     $('metaLine').textContent =
-      `${state.soc}% \u2192 ${state.target}%  \u00B7  +${kwhAdded} kWh  \u00B7  avg ${avgKw} kW to pack`;
+      `${state.soc}% \u2192 ${state.target}%  \u00B7  +${kwhAdded} kWh  \u00B7  avg ${avgKw} kW  \u00B7  ~$${costOf(state.soc, state.target).toFixed(2)}`;
   }
 
   // all-targets comparison table
@@ -406,8 +524,9 @@ function render(){
     const hh = hoursToTarget(state.soc, t);
     const done = t <= state.soc ? '' : fmtClock(hh);
     const dur  = t <= state.soc ? 'reached' : fmtDurPlain(hh);
+    const c    = t <= state.soc ? '' : '$' + costOf(state.soc, t).toFixed(2);
     const sel  = t === state.target ? ' class="sel"' : '';
-    return `<tr${sel}><td>to ${t}%</td><td>${dur}</td><td>${done}</td></tr>`;
+    return `<tr${sel}><td>to ${t}%</td><td>${dur}</td><td>${done}</td><td>${c}</td></tr>`;
   }).join('');
   $('allTargets').innerHTML = rows;
 
@@ -429,7 +548,7 @@ function renderCurve(){
 
   let path = '';
   for (let s = 0; s <= 100; s += 2){
-    const p = Math.min(dcCurveAt(s), state.dckw*0.97) * (state.cold ? 0.6 : 1);
+    const p = Math.min(dcCurveAt(s), state.dckw*0.97) * interp(TEMP_DC, state.tempF);
     path += (s ? 'L' : 'M') + X(s).toFixed(1) + ',' + Y(p).toFixed(1);
   }
   const bandX = X(state.soc), bandW = Math.max(0, X(state.target) - bandX);
@@ -475,11 +594,27 @@ $('chargers').addEventListener('click', e => {
   const card = e.target.closest('.card'); if (!card) return;
   state.charger = card.dataset.c; render();
 });
-$('coldRow').addEventListener('click', () => {
-  state.cold = !state.cold; render();
+$('tempSlider').addEventListener('input', e => {
+  state.tempF = +e.target.value; render();
+});
+$('rateInput').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (!isNaN(v) && v >= 0 && v <= 3){
+    state.rates[state.charger] = v; render();
+  }
+});
+$('rateInput').addEventListener('blur', () => render()); // reformat to 2dp
+$('startSlider').addEventListener('input', e => {
+  state.startOffsetMin = +e.target.value; render();
+});
+$('startReset').addEventListener('click', () => {
+  state.startOffsetMin = 0; render();
 });
 
 render();
+// Keep clock times honest if the app stays open — "done at 9:14 PM"
+// drifts as real time passes, so re-render once a minute.
+setInterval(render, 60000);
 </script>
 </body>
 </html>
