@@ -1,0 +1,25 @@
+{
+  "name": "Ariya Charge Timer",
+  "short_name": "Ariya Charge",
+  "description": "Charge time estimator for the 2024 Nissan Ariya (87 kWh). Enter current charge, pick a target and charger, get time-to-target with DC taper modeling.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

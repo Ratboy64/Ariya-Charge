@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0B0E14">
+<title>Ariya Charge Timer</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14; --panel:#131826; --panel2:#1A2133; --line:#26304A;
+  --copper:#E08D4F; --copper-dim:#8A5730;
+  --charge:#57D9A3; --charge-dim:#1E5B44;
+  --amber:#EAB308; --red:#EF4444;
+  --txt:#EDF0F7; --dim:#93A0B8; --faint:#5B6680;
+  --disp:'Chakra Petch',ui-monospace,monospace;
+  --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--body);
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body{max-width:520px;margin:0 auto;padding:16px 16px 40px;font-size:15px;line-height:1.45}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:baseline;gap:10px;margin:8px 0 18px}
+header .mark{width:10px;height:10px;border-radius:2px;background:var(--copper);
+  box-shadow:0 0 12px rgba(224,141,79,.6);align-self:center;flex:none}
+header h1{font-family:var(--disp);font-size:17px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+header .sub{font-size:12px;color:var(--faint);letter-spacing:.06em;margin-left:auto}
+
+/* ---------- battery ---------- */
+.battery-wrap{margin-bottom:6px}
+.batt-readout{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.batt-readout .now{font-family:var(--disp);font-size:52px;font-weight:700;line-height:1}
+.batt-readout .now small{font-size:22px;color:var(--dim);font-weight:500}
+.batt-readout .tgt{text-align:right;font-family:var(--disp)}
+.batt-readout .tgt .lab{display:block;font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.batt-readout .tgt .val{font-size:26px;font-weight:600;color:var(--copper)}
+
+.batt{position:relative;height:54px;border:2px solid var(--line);border-radius:12px;
+  background:var(--panel);overflow:hidden}
+.batt::after{ /* battery nub */
+  content:'';position:absolute;right:-8px;top:16px;width:6px;height:22px;
+  background:var(--line);border-radius:0 3px 3px 0}
+.batt .fill{position:absolute;inset:0;width:0%;
+  background:linear-gradient(90deg,var(--charge-dim),var(--charge));
+  transition:width .25s ease;border-radius:9px 0 0 9px}
+.batt .span{position:absolute;top:0;bottom:0;width:0;left:0;
+  background:repeating-linear-gradient(115deg,rgba(224,141,79,.28) 0 10px,rgba(224,141,79,.10) 10px 20px);
+  background-size:200% 100%;animation:flow 2.2s linear infinite;
+  border-left:2px solid var(--charge);border-right:2px solid var(--copper);
+  transition:left .25s ease,width .25s ease}
+@keyframes flow{to{background-position:-40px 0}}
+@media (prefers-reduced-motion:reduce){.batt .span{animation:none}}
+.batt .ticks{position:absolute;inset:0;display:flex}
+.batt .ticks i{flex:1;border-right:1px solid rgba(38,48,74,.55)}
+.batt .ticks i:last-child{border-right:none}
+
+input[type=range]{width:100%;margin:14px 0 4px;-webkit-appearance:none;appearance:none;
+  height:34px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--charge) var(--pct,50%),var(--panel2) var(--pct,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;
+  border-radius:50%;background:var(--txt);border:3px solid var(--charge);margin-top:-12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.slider-lab{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);
+  font-family:var(--disp);letter-spacing:.08em;margin-bottom:18px}
+
+/* ---------- sections ---------- */
+.sec-lab{font-family:var(--disp);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--faint);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-lab::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* target chips */
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chip{font-family:var(--disp);font-size:18px;font-weight:600;padding:14px 0;text-align:center;
+  border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--dim);
+  cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s}
+.chip.on{border-color:var(--copper);color:var(--copper);background:rgba(224,141,79,.10);
+  box-shadow:0 0 14px rgba(224,141,79,.18)}
+.nudge{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px}
+.nudge button{width:44px;height:38px;border-radius:10px;border:1.5px solid var(--line);
+  background:var(--panel);color:var(--txt);font-size:20px;font-family:var(--disp);cursor:pointer}
+.nudge span{font-size:12px;color:var(--faint);letter-spacing:.06em}
+
+/* charger cards */
+.chargers{display:flex;flex-direction:column;gap:8px}
+.card{border:1.5px solid var(--line);border-radius:14px;background:var(--panel);
+  padding:13px 14px;cursor:pointer;transition:all .15s}
+.card.on{border-color:var(--charge);background:rgba(87,217,163,.06)}
+.card .row1{display:flex;align-items:baseline;gap:10px}
+.card .name{font-family:var(--disp);font-weight:600;font-size:15px;letter-spacing:.04em}
+.card .kw{margin-left:auto;font-family:var(--disp);font-size:13px;color:var(--charge)}
+.card .desc{font-size:12.5px;color:var(--dim);margin-top:3px}
+.card .opts{display:none;gap:6px;margin-top:10px;flex-wrap:wrap}
+.card.on .opts{display:flex}
+.opt{font-family:var(--disp);font-size:13px;padding:7px 12px;border-radius:9px;
+  border:1.5px solid var(--line);background:var(--panel2);color:var(--dim);cursor:pointer}
+.opt.on{border-color:var(--charge);color:var(--charge)}
+
+/* cold toggle */
+.toggle-row{display:flex;align-items:center;gap:12px;margin-top:14px;
+  border:1.5px solid var(--line);border-radius:14px;background:var(--panel);padding:12px 14px;cursor:pointer}
+.toggle-row .t-txt b{font-size:14px;display:block}
+.toggle-row .t-txt span{font-size:12px;color:var(--dim)}
+.tog{margin-left:auto;width:50px;height:28px;border-radius:14px;background:var(--panel2);
+  border:1.5px solid var(--line);position:relative;flex:none;transition:background .15s}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--dim);transition:all .15s}
+.toggle-row.on .tog{background:rgba(96,165,250,.25);border-color:#60A5FA}
+.toggle-row.on .tog::after{left:24px;background:#60A5FA}
+
+/* ---------- result ---------- */
+.result{margin-top:22px;border:1.5px solid var(--copper-dim);border-radius:16px;
+  background:linear-gradient(180deg,rgba(224,141,79,.07),rgba(224,141,79,.02));padding:18px 16px}
+.result .big{font-family:var(--disp);font-size:46px;font-weight:700;line-height:1.05;color:var(--copper)}
+.result .big small{font-size:24px;font-weight:500}
+.result .doneat{font-family:var(--disp);font-size:15px;color:var(--txt);margin-top:6px}
+.result .meta{font-size:12.5px;color:var(--dim);margin-top:4px}
+.result .zero{font-size:15px;color:var(--charge);font-family:var(--disp)}
+
+/* all-targets table */
+.tt{width:100%;border-collapse:collapse;margin-top:14px;font-family:var(--disp)}
+.tt td{padding:9px 4px;border-top:1px solid var(--line);font-size:14.5px}
+.tt td:first-child{color:var(--dim)}
+.tt td:nth-child(2){text-align:right;font-weight:600}
+.tt td:nth-child(3){text-align:right;color:var(--faint);font-size:12.5px}
+.tt tr.sel td{color:var(--copper)}
+.tt tr.sel td:first-child::before{content:'\25B8 ';color:var(--copper)}
+
+/* curve */
+.curve-wrap{margin-top:18px}
+.curve-wrap svg{width:100%;height:auto;display:block}
+.curve-note{font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.5}
+
+footer{margin-top:26px;font-size:11px;color:var(--faint);line-height:1.6;text-align:center}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"></div>
+  <h1>Ariya Charge</h1>
+  <div class="sub">87 kWh &middot; 2024</div>
+</header>
+
+<!-- battery -->
+<div class="battery-wrap">
+  <div class="batt-readout">
+    <div class="now"><span id="nowPct">50</span><small>%</small></div>
+    <div class="tgt"><span class="lab">Target</span><span class="val" id="tgtPct">80%</span></div>
+  </div>
+  <div class="batt">
+    <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="fill" id="battFill"></div>
+    <div class="span" id="battSpan"></div>
+  </div>
+  <input type="range" id="socSlider" min="1" max="99" value="50" step="1">
+  <div class="slider-lab"><span>1%</span><span>CURRENT CHARGE</span><span>99%</span></div>
+</div>
+
+<!-- target -->
+<div class="sec-lab">Charge to</div>
+<div class="chips" id="chips">
+  <div class="chip" data-t="80">80%</div>
+  <div class="chip" data-t="85">85%</div>
+  <div class="chip" data-t="90">90%</div>
+  <div class="chip" data-t="100">100%</div>
+</div>
+<div class="nudge">
+  <button id="tgtMinus" aria-label="Lower target 1%">&minus;</button>
+  <span>fine-tune target</span>
+  <button id="tgtPlus" aria-label="Raise target 1%">+</button>
+</div>
+
+<!-- charger -->
+<div class="sec-lab">Plugged into</div>
+<div class="chargers" id="chargers">
+  <div class="card" data-c="L1">
+    <div class="row1"><span class="name">Level 1</span><span class="kw">~1.2 kW to pack</span></div>
+    <div class="desc">Standard 120V wall outlet. Slow but works anywhere.</div>
+  </div>
+  <div class="card" data-c="L2">
+    <div class="row1"><span class="name">Level 2</span><span class="kw" id="l2kw">7.2 kW max</span></div>
+    <div class="desc">240V home or public station. Ariya's onboard charger caps at 7.2 kW.</div>
+    <div class="opts" id="l2opts">
+      <div class="opt" data-kw="3.3">3.3 kW</div>
+      <div class="opt" data-kw="6.6">6.6 kW</div>
+      <div class="opt on" data-kw="7.2">7.2 kW</div>
+    </div>
+  </div>
+  <div class="card" data-c="DC">
+    <div class="row1"><span class="name">DC Fast</span><span class="kw" id="dckw">up to 130 kW</span></div>
+    <div class="desc">CCS fast charger. Power tapers as the battery fills.</div>
+    <div class="opts" id="dcopts">
+      <div class="opt" data-kw="50">50 kW</div>
+      <div class="opt" data-kw="62.5">62.5 kW</div>
+      <div class="opt on" data-kw="150">150 kW</div>
+      <div class="opt" data-kw="350">350 kW</div>
+    </div>
+  </div>
+</div>
+
+<div class="toggle-row" id="coldRow">
+  <div class="t-txt"><b>Cold battery</b><span>Below ~40&deg;F &mdash; the pack accepts less power</span></div>
+  <div class="tog"></div>
+</div>
+
+<!-- result -->
+<div class="result" id="result">
+  <div class="big" id="bigTime">&mdash;</div>
+  <div class="doneat" id="doneAt"></div>
+  <div class="meta" id="metaLine"></div>
+  <table class="tt" id="allTargets"></table>
+</div>
+
+<!-- taper curve (DC only) -->
+<div class="curve-wrap" id="curveWrap" style="display:none">
+  <div class="sec-lab">Charging power vs. state of charge</div>
+  <svg id="curveSvg" viewBox="0 0 340 150" role="img" aria-label="DC charging taper curve"></svg>
+  <div class="curve-note">The shaded band is your session. This is why 80&rarr;100% takes nearly as long as 20&rarr;80% on a fast charger &mdash; the car throttles power to protect the battery.</div>
+</div>
+
+<footer>Estimates based on 87 kWh usable capacity, published Ariya charge rates, and typical taper behavior. Real-world times vary with temperature, battery age, and station sharing.</footer>
+
+<script>
+'use strict';
+/* ============================================================
+   ARIYA CHARGE TIMER
+   Battery: 87 kWh usable  ->  0.87 kWh per 1% of charge
+   ============================================================ */
+const CAP = 87;                 // kWh usable
+const KWH_PER_PCT = CAP / 100;  // 0.87
+
+const state = {
+  soc: 50,        // current %
+  target: 80,     // target %
+  charger: 'L2',  // L1 | L2 | DC
+  l2kw: 7.2,      // station kW (wall side)
+  dckw: 150,      // station max kW
+  cold: false
+};
+
+/* ---------- persistence ---------- */
+const SKEY = 'ariya_charge_state';
+try {
+  const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
+  if (saved) Object.assign(state, saved);
+} catch(e){ /* corrupt state -> defaults */ }
+function persist(){ try{ localStorage.setItem(SKEY, JSON.stringify(state)); }catch(e){} }
+
+/* ============================================================
+   POWER MODELS  (all return kW *delivered to the pack* at a
+   given state of charge)
+   ============================================================ */
+
+/* L1: 120V x 12A = 1.44 kW at the wall, ~82% efficient.
+   Effectively flat across the whole range. */
+function powerL1(soc){
+  let p = 1.44 * 0.82;
+  if (soc > 97) p *= 0.7;               // tiny top-end balancing taper
+  return p;
+}
+
+/* L2: min(station, onboard 7.2 kW) at the wall, ~90% efficient.
+   AC charging also tapers slightly in the last few percent as the
+   BMS balances cells. */
+function powerL2(soc){
+  const wall = Math.min(state.l2kw, 7.2);
+  let p = wall * 0.90;
+  if (soc > 96) p *= Math.max(0.3, 1 - (soc - 96) * 0.175); // fade to ~30%
+  return p;
+}
+
+/* DC: piecewise-linear taper curve for the 87 kWh Ariya pack,
+   points are [SoC%, pack kW]. Peak ~130 kW near 20% SoC, then the
+   BMS steps power down to protect the cells. Station max caps it. */
+const DC_CURVE = [
+  [0,  70], [10, 120], [20, 130], [45, 122], [55, 100],
+  [65, 80], [70, 66],  [75, 55],  [80, 42],  [85, 30],
+  [90, 20], [95, 12],  [100, 6]
+];
+function dcCurveAt(soc){
+  for (let i = 1; i < DC_CURVE.length; i++){
+    const [s0,p0] = DC_CURVE[i-1], [s1,p1] = DC_CURVE[i];
+    if (soc <= s1) return p0 + (p1 - p0) * (soc - s0) / (s1 - s0);
+  }
+  return DC_CURVE[DC_CURVE.length-1][1];
+}
+function powerDC(soc){
+  return Math.min(dcCurveAt(soc), state.dckw * 0.97); // ~97% DC efficiency
+}
+
+function packPower(soc){
+  let p = state.charger === 'L1' ? powerL1(soc)
+        : state.charger === 'L2' ? powerL2(soc)
+        : powerDC(soc);
+  if (state.cold){
+    // Cold pack: DC power is heavily curtailed; AC only mildly slower
+    p *= (state.charger === 'DC') ? 0.60 : 0.95;
+  }
+  return Math.max(p, 0.05);
+}
+
+/* ============================================================
+   TIME INTEGRATION
+   Walk from current -> target in 0.5% steps; each step needs
+   0.435 kWh, delivered at whatever power the curve allows there.
+   ============================================================ */
+function hoursToTarget(from, to){
+  if (to <= from) return 0;
+  const STEP = 0.5;
+  let hrs = 0;
+  for (let s = from; s < to; s += STEP){
+    const seg = Math.min(STEP, to - s);
+    hrs += (KWH_PER_PCT * seg) / packPower(s + seg/2); // midpoint power
+  }
+  return hrs;
+}
+
+/* ---------- formatting ---------- */
+function fmtDur(h){
+  const totalMin = Math.round(h * 60);
+  if (totalMin < 1) return '<1 m';
+  const d = Math.floor(totalMin / 1440),
+        hh = Math.floor((totalMin % 1440) / 60),
+        mm = totalMin % 60;
+  let out = '';
+  if (d)  out += d + '<small> d </small>';
+  if (hh) out += hh + '<small> h </small>';
+  if (mm || (!d && !hh)) out += mm + '<small> m</small>';
+  return out;
+}
+function fmtDurPlain(h){
+  const totalMin = Math.round(h * 60);
+  const d = Math.floor(totalMin/1440), hh = Math.floor((totalMin%1440)/60), mm = totalMin%60;
+  return (d?d+'d ':'') + (hh?hh+'h ':'') + mm+'m';
+}
+function fmtClock(h){
+  const t = new Date(Date.now() + h * 3600 * 1000);
+  const opts = {hour:'numeric', minute:'2-digit'};
+  const dayDiff = Math.floor((t - new Date().setHours(0,0,0,0)) / 86400000);
+  let day = '';
+  if (dayDiff === 1) day = ' tomorrow';
+  else if (dayDiff > 1) day = ' ' + t.toLocaleDateString([], {weekday:'short'});
+  return t.toLocaleTimeString([], opts) + day;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+function render(){
+  // battery visual
+  $('nowPct').textContent = state.soc;
+  $('tgtPct').textContent = state.target + '%';
+  $('battFill').style.width = state.soc + '%';
+  const span = $('battSpan');
+  if (state.target > state.soc){
+    span.style.left  = state.soc + '%';
+    span.style.width = (state.target - state.soc) + '%';
+    span.style.display = 'block';
+  } else span.style.display = 'none';
+
+  const slider = $('socSlider');
+  slider.value = state.soc;
+  slider.style.setProperty('--pct', state.soc + '%');
+
+  // chips
+  document.querySelectorAll('.chip').forEach(c =>
+    c.classList.toggle('on', +c.dataset.t === state.target));
+
+  // charger cards + sub-options
+  document.querySelectorAll('.card').forEach(c =>
+    c.classList.toggle('on', c.dataset.c === state.charger));
+  document.querySelectorAll('#l2opts .opt').forEach(o =>
+    o.classList.toggle('on', +o.dataset.kw === state.l2kw));
+  document.querySelectorAll('#dcopts .opt').forEach(o =>
+    o.classList.toggle('on', +o.dataset.kw === state.dckw));
+  $('coldRow').classList.toggle('on', state.cold);
+
+  // main result
+  const h = hoursToTarget(state.soc, state.target);
+  if (state.target <= state.soc){
+    $('bigTime').innerHTML = '<span class="zero">Already there</span>';
+    $('doneAt').textContent = '';
+    $('metaLine').textContent = 'Target is at or below your current charge.';
+  } else {
+    $('bigTime').innerHTML = fmtDur(h);
+    $('doneAt').textContent = 'Done around ' + fmtClock(h) + ' if you plug in now';
+    const kwhAdded = ((state.target - state.soc) * KWH_PER_PCT).toFixed(1);
+    const avgKw = (kwhAdded / h).toFixed(1);
+    $('metaLine').textContent =
+      `${state.soc}% \u2192 ${state.target}%  \u00B7  +${kwhAdded} kWh  \u00B7  avg ${avgKw} kW to pack`;
+  }
+
+  // all-targets comparison table
+  const rows = [80, 85, 90, 100].map(t => {
+    const hh = hoursToTarget(state.soc, t);
+    const done = t <= state.soc ? '' : fmtClock(hh);
+    const dur  = t <= state.soc ? 'reached' : fmtDurPlain(hh);
+    const sel  = t === state.target ? ' class="sel"' : '';
+    return `<tr${sel}><td>to ${t}%</td><td>${dur}</td><td>${done}</td></tr>`;
+  }).join('');
+  $('allTargets').innerHTML = rows;
+
+  renderCurve();
+  persist();
+}
+
+/* ---------- DC taper curve SVG ---------- */
+function renderCurve(){
+  const wrap = $('curveWrap');
+  if (state.charger !== 'DC'){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  const W=340, H=150, padL=30, padB=20, padT=8, padR=6;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+  const maxKw = Math.max(140, state.dckw*0.97 + 10);
+  const X = s => padL + plotW * s/100;
+  const Y = p => padT + plotH * (1 - p/maxKw);
+
+  let path = '';
+  for (let s = 0; s <= 100; s += 2){
+    const p = Math.min(dcCurveAt(s), state.dckw*0.97) * (state.cold ? 0.6 : 1);
+    path += (s ? 'L' : 'M') + X(s).toFixed(1) + ',' + Y(p).toFixed(1);
+  }
+  const bandX = X(state.soc), bandW = Math.max(0, X(state.target) - bandX);
+
+  $('curveSvg').innerHTML = `
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#26304A"/>
+    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#26304A"/>
+    ${[0,25,50,75,100].map(s=>`<text x="${X(s)}" y="${H-6}" fill="#5B6680" font-size="9" text-anchor="middle" font-family="Chakra Petch">${s}%</text>`).join('')}
+    ${[50,100].map(p=>p<maxKw?`<text x="${padL-4}" y="${Y(p)+3}" fill="#5B6680" font-size="9" text-anchor="end" font-family="Chakra Petch">${p}</text>
+      <line x1="${padL}" y1="${Y(p)}" x2="${W-padR}" y2="${Y(p)}" stroke="#1A2133"/>`:'').join('')}
+    <rect x="${bandX}" y="${padT}" width="${bandW}" height="${plotH}" fill="rgba(224,141,79,.14)"/>
+    <line x1="${bandX}" y1="${padT}" x2="${bandX}" y2="${H-padB}" stroke="#57D9A3" stroke-dasharray="3 3"/>
+    <line x1="${bandX+bandW}" y1="${padT}" x2="${bandX+bandW}" y2="${H-padB}" stroke="#E08D4F" stroke-dasharray="3 3"/>
+    <path d="${path}" fill="none" stroke="#57D9A3" stroke-width="2.5" stroke-linejoin="round"/>
+    <text x="${W-padR}" y="${padT+8}" fill="#5B6680" font-size="9" text-anchor="end" font-family="Chakra Petch">kW</text>`;
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+$('socSlider').addEventListener('input', e => {
+  state.soc = +e.target.value; render();
+});
+$('chips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  state.target = +c.dataset.t; render();
+});
+$('tgtMinus').addEventListener('click', () => {
+  state.target = Math.max(1, state.target - 1); render();
+});
+$('tgtPlus').addEventListener('click', () => {
+  state.target = Math.min(100, state.target + 1); render();
+});
+$('chargers').addEventListener('click', e => {
+  const opt = e.target.closest('.opt');
+  if (opt){
+    const card = opt.closest('.card');
+    if (card.dataset.c === 'L2') state.l2kw = +opt.dataset.kw;
+    else state.dckw = +opt.dataset.kw;
+    state.charger = card.dataset.c;
+    render(); return;
+  }
+  const card = e.target.closest('.card'); if (!card) return;
+  state.charger = card.dataset.c; render();
+});
+$('coldRow').addEventListener('click', () => {
+  state.cold = !state.cold; render();
+});
+
+render();
+</script>
+</body>
+</html>
