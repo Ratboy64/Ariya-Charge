@@ -16,6 +16,8 @@ The app never does a naive `kWh ÷ kW` division. It integrates in 0.5% steps (0.
 
 An **ambient temperature slider** (-10°F to 110°F) applies a piecewise power multiplier: DC charging is heavily curtailed in the cold (~55% power at freezing, ~30% at -10°F — the BMS limits current into cold cells to prevent lithium plating) and mildly throttled above ~95°F; AC is barely rate-limited by temperature, carrying only a small cold penalty for battery-heater overhead.
 
+A **range estimator** converts charge to miles using an adjustable efficiency setting (default 3.0 mi/kWh — tune it to your dash's lifetime average). The result card shows range at the target ("~209 mi at 80%, +78 mi") and the comparison table shows range at every target.
+
 A **cost estimator** takes a $/kWh rate (remembered separately for home AC vs. public DC, since they differ 3–5×) and computes session cost on the *wall side* — pack energy divided by charger efficiency — because that's what the meter or station actually bills. Costs appear in the result line and per-target in the comparison table.
 
 When DC Fast is selected, a live taper-curve chart appears with your session shaded on it — a visual explanation of why 80→100% takes nearly as long as 20→80% on a fast charger.
