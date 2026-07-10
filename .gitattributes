@@ -1,0 +1,7 @@
+# Normalize line endings
+* text=auto
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+# Binary files
+*.png binary
