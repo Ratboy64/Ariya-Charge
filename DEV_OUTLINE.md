@@ -59,6 +59,14 @@ Cold multipliers: DC ×0.60, AC ×0.95
   - Billed on wall-side energy: `packKwh / wallEff()` (L1 0.82, L2 0.90, DC 0.97)
   - Cost shown in result meta line + 4th column of all-targets table
 
+## v1.3 — SHIPPED
+
+- [x] Range estimator with adjustable efficiency (`state.miPerKwh`, default 3.0)
+  - `rangeAt(pct) = pct/100 x 87 kWh x miPerKwh`
+  - Result card: range at target + miles added; "Already there" state shows range at current %
+  - 5th column (green) in all-targets table; padding tightened for 5 columns on ~380px
+  - Persisted with the rest of state; input clamped 1.0-6.0 mi/kWh
+
 ---
 
 ## v1.1 — Candidate features
@@ -67,10 +75,11 @@ Cold multipliers: DC ×0.60, AC ×0.95
 - v1.2 shipped $/kWh billing; some stations bill $/min or add idle fees
 - Input: optional $/min rate + idle fee; blend with kWh rate
 
-### Range added
-- Convert kWh to estimated miles: Ariya e-4ORCE ≈ 2.9 mi/kWh, FWD ≈ 3.2 mi/kWh
-- Toggle in a small settings row; show "+87 mi" next to kWh added
-- Optional: seasonal efficiency adjustment tied to cold toggle
+### Seasonal efficiency coupling
+- v1.3 shipped the range estimator with manual mi/kWh
+- Candidate: auto-derate range with the ambient temperature slider
+  (cold-weather driving efficiency drops ~20-30% below freezing —
+  cabin heat + denser air + cold pack)
 
 ### Departure planner (reverse mode)
 - Forward direction shipped in v1.1 (start-time slider). Reverse remains:
