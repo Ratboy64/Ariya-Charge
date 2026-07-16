@@ -67,6 +67,23 @@ Cold multipliers: DC ×0.60, AC ×0.95
   - 5th column (green) in all-targets table; padding tightened for 5 columns on ~380px
   - Persisted with the rest of state; input clamped 1.0-6.0 mi/kWh
 
+## v1.4 — SHIPPED
+
+- [x] Calibration & session log (forecast vs. actual)
+  - `logSession(from, to, actualHours)`: measured = rawModelHours / actualHours
+    computed against the UNCALIBRATED model so factors never compound
+  - Per-charger factor `state.cal = {L1, L2, DC}`, EWMA alpha 0.30
+  - Safety clamps: factor [0.50, 1.25], single measurement [0.40, 1.60]
+  - `hoursToTarget(from, to, useCal)` — useCal=false for raw model
+  - Sessions in `ariya_sessions` (max 50 FIFO): date, charger, from/to %,
+    actual vs. model minutes, measured factor, factor-after, tempF
+  - UI: per-charger factor badges, log form (uses selected charger + temp),
+    last-8 history list, reset button
+  - Aging signal: with 5+ sessions per charger, first-half vs. recent-half
+    average measured factor; >5% sustained drop flagged as possible pack
+    aging / charger derating
+  - Result meta line shows "calibrated" tag when a factor is active
+
 ---
 
 ## v1.1 — Candidate features
@@ -93,12 +110,10 @@ Cold multipliers: DC ×0.60, AC ×0.95
   screen (iOS 16.4+) — same class of Safari restriction as the Web Speech
   gesture-gating solved in DriverGuard Sprint 1
 
-### Session log
-- "Start charging" button → logs actual start; "Done" → compares actual vs. predicted
-- Over time, auto-tune the efficiency constants from real sessions
-  (same philosophy as DriverGuard's drive-baseline calibration, with
-  safety clamps so one bad data point can't skew the model)
-- Storage: `ariya_sessions` (max 50, FIFO — same pattern as `dg_trip_summaries`)
+### Live session timer
+- v1.4 shipped manual session logging; candidate: "Start charging" button
+  that timestamps start automatically, then one tap + end % on completion
+- Would remove the two most error-prone manual fields (start %, duration)
 
 ### Multi-vehicle support
 - Vehicle profiles: capacity, onboard AC limit, DC curve points
