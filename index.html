@@ -161,6 +161,45 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;heigh
 .curve-wrap svg{width:100%;height:auto;display:block}
 .curve-note{font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.5}
 
+/* calibration */
+.cal-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.cal-badge{border:1.5px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:10px 8px;text-align:center}
+.cal-badge .cn{font-family:var(--disp);font-size:11px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.cal-badge .cf{font-family:var(--disp);font-size:20px;font-weight:600;margin-top:2px}
+.cal-badge .cf.ok{color:var(--dim)}
+.cal-badge .cf.adj{color:var(--copper)}
+.cal-badge .cs{font-size:10px;color:var(--faint)}
+.cal-form{border:1.5px solid var(--line);border-radius:14px;background:var(--panel);padding:14px}
+.cal-form-title{font-family:var(--disp);font-size:13px;font-weight:600;letter-spacing:.03em}
+.cal-form-title span{display:block;font-family:var(--body);font-weight:400;font-size:11px;color:var(--faint);margin-top:2px}
+.cal-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:12px 0}
+.cal-grid label{font-size:10px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;
+  font-family:var(--disp);display:flex;flex-direction:column;gap:4px}
+.cal-grid input{font-family:var(--disp);font-size:19px;font-weight:600;color:var(--txt);width:100%;
+  background:var(--panel2);border:1.5px solid var(--line);border-radius:9px;padding:8px 6px;
+  text-align:center;outline:none}
+.cal-grid input:focus{border-color:var(--copper)}
+.cal-grid label span{display:none}
+.cal-save{width:100%;font-family:var(--disp);font-size:14px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:#0B0E14;background:var(--copper);border:none;border-radius:10px;
+  padding:12px;cursor:pointer}
+.cal-save:active{opacity:.85}
+.cal-msg{font-size:12.5px;line-height:1.5;margin-top:10px;color:var(--charge)}
+.cal-msg.err{color:var(--red)}
+.cal-history{margin-top:12px}
+.cal-hrow{display:flex;gap:10px;align-items:baseline;border-top:1px solid var(--line);
+  padding:8px 2px;font-family:var(--disp);font-size:12px}
+.cal-hrow .hd{color:var(--faint);width:52px;flex:none}
+.cal-hrow .hc{color:var(--dim);width:26px;flex:none}
+.cal-hrow .hs{color:var(--txt)}
+.cal-hrow .hf{margin-left:auto;color:var(--copper);font-weight:600}
+.cal-aging{font-size:11.5px;color:var(--dim);line-height:1.55;margin-top:10px;
+  border-left:2px solid var(--copper-dim);padding-left:10px}
+.cal-reset{font-family:var(--disp);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint);background:none;border:1px solid var(--line);border-radius:7px;
+  padding:5px 9px;cursor:pointer;margin-top:10px}
+
 footer{margin-top:26px;font-size:11px;color:var(--faint);line-height:1.6;text-align:center}
 </style>
 </head>
@@ -280,6 +319,22 @@ footer{margin-top:26px;font-size:11px;color:var(--faint);line-height:1.6;text-al
   <div class="curve-note">The shaded band is your session. This is why 80&rarr;100% takes nearly as long as 20&rarr;80% on a fast charger &mdash; the car throttles power to protect the battery.</div>
 </div>
 
+<!-- calibration -->
+<div class="sec-lab">Calibration</div>
+<div class="cal-badges" id="calBadges"></div>
+<div class="cal-form">
+  <div class="cal-form-title">Log a real session <span>(uses the charger &amp; temperature selected above)</span></div>
+  <div class="cal-grid">
+    <label>Started at<input type="number" id="calFrom" inputmode="numeric" min="0" max="99" placeholder="46"><span>%</span></label>
+    <label>Ended at<input type="number" id="calTo" inputmode="numeric" min="1" max="100" placeholder="79"><span>%</span></label>
+    <label>Took<input type="number" id="calH" inputmode="numeric" min="0" max="99" placeholder="5"><span>h</span></label>
+    <label>&nbsp;<input type="number" id="calM" inputmode="numeric" min="0" max="59" placeholder="15"><span>m</span></label>
+  </div>
+  <button class="cal-save" id="calSave">Save &amp; calibrate</button>
+  <div class="cal-msg" id="calMsg"></div>
+</div>
+<div class="cal-history" id="calHistory"></div>
+
 <footer>Estimates based on 87 kWh usable capacity, published Ariya charge rates, and typical taper behavior. Real-world times vary with temperature, battery age, and station sharing.</footer>
 
 <script>
@@ -300,11 +355,18 @@ const state = {
   tempF: 70,         // ambient temperature °F
   miPerKwh: 3.0,     // driving efficiency for range estimates
   rates: { L1: 0.14, L2: 0.14, DC: 0.45 },  // $/kWh billed, per charger type
+  cal:   { L1: 1.0,  L2: 1.0,  DC: 1.0 },   // learned power correction per charger
   startOffsetMin: 0  // minutes from now until plug-in (0 = now); NOT persisted
 };
 
 /* ---------- persistence ---------- */
 const SKEY = 'ariya_charge_state';
+const SESS_KEY = 'ariya_sessions';
+let sessions = [];
+try { sessions = JSON.parse(localStorage.getItem(SESS_KEY) || '[]'); } catch(e){ sessions = []; }
+function persistSessions(){
+  try{ localStorage.setItem(SESS_KEY, JSON.stringify(sessions.slice(-50))); }catch(e){}
+}
 try {
   const saved = JSON.parse(localStorage.getItem(SKEY) || 'null');
   if (saved){
@@ -313,10 +375,11 @@ try {
       saved.tempF = saved.cold ? 30 : 70;
       delete saved.cold;
     }
-    const savedRates = saved.rates;   // merge rates so missing keys keep defaults
-    delete saved.rates;
+    const savedRates = saved.rates, savedCal = saved.cal; // merge nested objects
+    delete saved.rates; delete saved.cal;
     Object.assign(state, saved);
     if (savedRates) Object.assign(state.rates, savedRates);
+    if (savedCal)   Object.assign(state.cal, savedCal);
   }
 } catch(e){ /* corrupt state -> defaults */ }
 state.startOffsetMin = 0; // always open with "plug in now"
@@ -407,27 +470,90 @@ function wallEff(){
        : 0.97;
 }
 
-function packPower(soc){
+function packPower(soc, useCal = true){
   let p = state.charger === 'L1' ? powerL1(soc)
         : state.charger === 'L2' ? powerL2(soc)
         : powerDC(soc);
-  return Math.max(p * tempMult(), 0.05);
+  p *= tempMult();
+  if (useCal) p *= state.cal[state.charger];   // learned real-world correction
+  return Math.max(p, 0.05);
 }
 
 /* ============================================================
    TIME INTEGRATION
    Walk from current -> target in 0.5% steps; each step needs
    0.435 kWh, delivered at whatever power the curve allows there.
+   useCal=false gives the raw model prediction — used by the
+   calibration logic so factors never compound on themselves.
    ============================================================ */
-function hoursToTarget(from, to){
+function hoursToTarget(from, to, useCal = true){
   if (to <= from) return 0;
   const STEP = 0.5;
   let hrs = 0;
   for (let s = from; s < to; s += STEP){
     const seg = Math.min(STEP, to - s);
-    hrs += (KWH_PER_PCT * seg) / packPower(s + seg/2); // midpoint power
+    hrs += (KWH_PER_PCT * seg) / packPower(s + seg/2, useCal); // midpoint power
   }
   return hrs;
+}
+
+/* ============================================================
+   CALIBRATION
+   Each logged session compares the RAW model prediction (cal=1)
+   against reality: measured = rawHours / actualHours.
+   measured < 1  ->  real setup is slower than the model.
+   The factor is blended in with an EWMA (30% weight per session)
+   and hard-clamped so a single bad data point — mis-remembered
+   time, shared DC station, typo — can't wreck the model.
+   ============================================================ */
+const CAL_ALPHA = 0.30;                 // weight of newest session
+const CAL_MIN = 0.50, CAL_MAX = 1.25;   // sane bounds for the stored factor
+const MEAS_MIN = 0.40, MEAS_MAX = 1.60; // sane bounds for one measurement
+
+function logSession(fromPct, toPct, actualHours){
+  const rawHrs = hoursToTarget(fromPct, toPct, false);   // model, uncalibrated
+  let measured = rawHrs / actualHours;
+  measured = Math.min(MEAS_MAX, Math.max(MEAS_MIN, measured));
+  const c = state.charger;
+  const before = state.cal[c];
+  const after = Math.min(CAL_MAX, Math.max(CAL_MIN,
+    before * (1 - CAL_ALPHA) + measured * CAL_ALPHA));
+  state.cal[c] = Math.round(after * 1000) / 1000;
+  sessions.push({
+    t: Date.now(), c, f: fromPct, e: toPct,
+    actMin: Math.round(actualHours * 60),
+    rawMin: Math.round(rawHrs * 60),
+    meas: Math.round(measured * 1000) / 1000,
+    calAfter: state.cal[c],
+    tempF: state.tempF
+  });
+  persistSessions();
+  return { measured, before, after: state.cal[c] };
+}
+
+/* Aging signal: for a charger with 5+ sessions, compare the average
+   measured factor of the first half vs. the most recent half. A
+   sustained drop means charging is genuinely getting slower over
+   time — pack aging, or a derating charger. */
+function agingNote(){
+  const byC = {};
+  sessions.forEach(s => (byC[s.c] = byC[s.c] || []).push(s.meas));
+  const notes = [];
+  for (const c in byC){
+    const m = byC[c];
+    if (m.length < 5) continue;
+    const half = Math.floor(m.length / 2);
+    const early = m.slice(0, half).reduce((a,b)=>a+b,0) / half;
+    const late  = m.slice(-half).reduce((a,b)=>a+b,0) / half;
+    const drift = (late - early) / early;
+    if (drift < -0.05)
+      notes.push(`${c}: sessions are trending ${Math.round(-drift*100)}% slower than your earliest logs — consistent with pack aging or charger derating.`);
+    else if (drift > 0.05)
+      notes.push(`${c}: sessions are trending ${Math.round(drift*100)}% faster than your earliest logs.`);
+    else
+      notes.push(`${c}: stable across ${m.length} sessions — no aging signal yet.`);
+  }
+  return notes.join(' ');
 }
 
 /* ---------- formatting ---------- */
@@ -539,7 +665,8 @@ function render(){
     const kwhAdded = ((state.target - state.soc) * KWH_PER_PCT).toFixed(1);
     const avgKw = (kwhAdded / h).toFixed(1);
     $('metaLine').textContent =
-      `${state.soc}% \u2192 ${state.target}%  \u00B7  +${kwhAdded} kWh  \u00B7  avg ${avgKw} kW  \u00B7  ~$${costOf(state.soc, state.target).toFixed(2)}`;
+      `${state.soc}% \u2192 ${state.target}%  \u00B7  +${kwhAdded} kWh  \u00B7  avg ${avgKw} kW  \u00B7  ~$${costOf(state.soc, state.target).toFixed(2)}` +
+      (Math.abs(state.cal[state.charger] - 1) > 0.005 ? '  \u00B7  calibrated' : '');
   }
 
   // all-targets comparison table
@@ -552,6 +679,36 @@ function render(){
     return `<tr${sel}><td>to ${t}%</td><td>${dur}</td><td>${done}</td><td>${c}</td><td>${rangeAt(t)} mi</td></tr>`;
   }).join('');
   $('allTargets').innerHTML = rows;
+
+  // calibration section
+  const calNames = { L1:'Level 1', L2:'Level 2', DC:'DC Fast' };
+  $('calBadges').innerHTML = ['L1','L2','DC'].map(c => {
+    const f = state.cal[c], adj = Math.abs(f - 1) > 0.005;
+    const n = sessions.filter(s => s.c === c).length;
+    return `<div class="cal-badge"><div class="cn">${calNames[c]}</div>
+      <div class="cf ${adj?'adj':'ok'}">${adj ? '\u00D7'+f.toFixed(2) : '\u2014'}</div>
+      <div class="cs">${n ? n+' session'+(n>1?'s':'') : 'not calibrated'}</div></div>`;
+  }).join('');
+  const hist = sessions.slice(-8).reverse().map(s => {
+    const d = new Date(s.t);
+    return `<div class="cal-hrow">
+      <span class="hd">${(d.getMonth()+1)}/${d.getDate()}</span>
+      <span class="hc">${s.c}</span>
+      <span class="hs">${s.f}\u2192${s.e}% \u00B7 ${fmtDurPlain(s.actMin/60)} <span style="color:var(--faint)">(model ${fmtDurPlain(s.rawMin/60)})</span></span>
+      <span class="hf">\u00D7${s.meas.toFixed(2)}</span></div>`;
+  }).join('');
+  const aging = agingNote();
+  $('calHistory').innerHTML = hist +
+    (aging ? `<div class="cal-aging">${aging}</div>` : '') +
+    (sessions.length ? `<button class="cal-reset" id="calReset">reset calibration &amp; history</button>` : '');
+  const cr = $('calReset');
+  if (cr) cr.onclick = () => {
+    if (confirm('Clear all logged sessions and reset correction factors to 1.00?')){
+      sessions = []; persistSessions();
+      state.cal = { L1:1, L2:1, DC:1 };
+      render();
+    }
+  };
 
   renderCurve();
   persist();
@@ -634,6 +791,30 @@ $('effInput').addEventListener('input', e => {
   }
 });
 $('effInput').addEventListener('blur', () => render()); // reformat to 1dp
+$('calSave').addEventListener('click', () => {
+  const f = parseInt($('calFrom').value), e = parseInt($('calTo').value);
+  const hh = parseInt($('calH').value) || 0, mm = parseInt($('calM').value) || 0;
+  const msg = $('calMsg');
+  const hours = hh + mm/60;
+  if (isNaN(f) || isNaN(e) || f < 0 || e > 100 || e <= f){
+    msg.className = 'cal-msg err';
+    msg.textContent = 'Check the percentages — end must be higher than start.';
+    return;
+  }
+  if (hours <= 0 || hours > 100){
+    msg.className = 'cal-msg err';
+    msg.textContent = 'Enter how long the session actually took (hours / minutes).';
+    return;
+  }
+  const r = logSession(f, e, hours);
+  msg.className = 'cal-msg';
+  const dir = r.measured < 0.98 ? 'slower' : r.measured > 1.02 ? 'faster' : 'right on';
+  msg.textContent =
+    `Logged. That session ran \u00D7${r.measured.toFixed(2)} vs. the model (${dir}). ` +
+    `${state.charger} correction: \u00D7${r.before.toFixed(2)} \u2192 \u00D7${r.after.toFixed(2)}. Forecasts updated.`;
+  $('calFrom').value = $('calTo').value = $('calH').value = $('calM').value = '';
+  render();
+});
 $('startSlider').addEventListener('input', e => {
   state.startOffsetMin = +e.target.value; render();
 });
