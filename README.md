@@ -22,6 +22,8 @@ A **cost estimator** takes a $/kWh rate (remembered separately for home AC vs. p
 
 When DC Fast is selected, a live taper-curve chart appears with your session shaded on it — a visual explanation of why 80→100% takes nearly as long as 20→80% on a fast charger.
 
+A **calibration system** closes the gap between forecast and reality. Log a real session (start %, end %, actual duration) and the app compares it to the raw model, derives a power correction factor for that charger type, and applies it to all future forecasts. Factors are learned via exponential moving average (30% weight per session) and hard-clamped (0.50–1.25) so one mis-typed session can't wreck the model. Session history is kept (last 50), and once a charger has 5+ logged sessions the app compares early vs. recent factors — a sustained downward drift is flagged as a possible battery-aging or charger-derating signal.
+
 Validated against Nissan's published figures: ~10.5 h for a full Level 2 charge, ~40 min for 20→80% DC on a 130 kW-capable station.
 
 ## Files
